@@ -1,14 +1,13 @@
 library(rvest)
 library(dplyr)
 library(stringr)
+library(httr)
 
-
-setwd('C:\\Users\\ghilmanfat\\OneDrive - PT Telekomunikasi Selular\\Tsel work\\Others\\pemilu2019\\pilpres')
-
-link = read_html("https://pemilu2019.kpu.go.id/static/json/wilayah/0.json")
+setwd("~/pilpres2019")
+set_config(config(ssl_verifypeer = 0L))
+link = content(GET(URLencode("https://pemilu2019.kpu.go.id/static/json/wilayah/0.json")), as="text")
 # get provinsi
 smmry_wilayah =  link %>% 
-  html_text() %>% 
   jsonlite::fromJSON(.)
 wilayah_names = data.frame(name = sapply(smmry_wilayah, function(x) x$nama), id = names(smmry_wilayah))
 
@@ -20,10 +19,9 @@ i_prog=1;j_prog=1;k_prog=1;l_prog=1;m_prog=1
 for(i in i_prog:nrow(wilayah_names)){
   possibleError = tryCatch({
     # get kabupaten
-    link = read_html(paste0('https://pemilu2019.kpu.go.id/static/json/wilayah/', wilayah_names$id[i] ,'.json'))
+    link = content(GET(URLencode(paste0('https://pemilu2019.kpu.go.id/static/json/wilayah/', wilayah_names$id[i] ,'.json'))), as="text")
     Sys.sleep(sample(seq(1, 3, by=0.001), 1))
     smmry_kabupaten = link %>% 
-      html_text() %>% 
       jsonlite::fromJSON(.)
     kabupaten_names = data.frame(name = sapply(smmry_kabupaten, function(x) x$nama), id = names(smmry_kabupaten))
   }, error = function(e) e)
@@ -40,10 +38,9 @@ for(i in i_prog:nrow(wilayah_names)){
   for(j in j_prog:nrow(kabupaten_names)){
     Sys.sleep(sample(seq(1, 3, by=0.001), 1))
     possibleError = tryCatch({
-    #get kecamatan
-      link = read_html(paste0('https://pemilu2019.kpu.go.id/static/json/wilayah/', wilayah_names$id[i], '/', kabupaten_names$id[j],'.json'))
+      #get kecamatan
+      link = content(GET(URLencode(paste0('https://pemilu2019.kpu.go.id/static/json/wilayah/', wilayah_names$id[i], '/', kabupaten_names$id[j],'.json'))), as="text")
       smmry_kecamatan = link %>% 
-        html_text() %>% 
         jsonlite::fromJSON(.)
       kecamatan_names = data.frame(name = sapply(smmry_kecamatan, function(x) x$nama), id = names(smmry_kecamatan))
     }, error = function(e) e)
@@ -61,9 +58,8 @@ for(i in i_prog:nrow(wilayah_names)){
       Sys.sleep(sample(seq(1, 3, by=0.001), 1))
       possibleError = tryCatch({
         #get kelurahan
-        link = read_html(paste0('https://pemilu2019.kpu.go.id/static/json/wilayah/', wilayah_names$id[i], '/', kabupaten_names$id[j],'/', kecamatan_names$id[k],'.json'))
+        link = content(GET(URLencode(paste0('https://pemilu2019.kpu.go.id/static/json/wilayah/', wilayah_names$id[i], '/', kabupaten_names$id[j],'/', kecamatan_names$id[k],'.json'))), as="text")
         smmry_kelurahan = link %>% 
-          html_text() %>% 
           jsonlite::fromJSON(.)
         kelurahan_names = data.frame(name = sapply(smmry_kelurahan, function(x) x$nama), id = names(smmry_kelurahan))
       }, error = function(e) e)
@@ -81,9 +77,8 @@ for(i in i_prog:nrow(wilayah_names)){
         Sys.sleep(sample(seq(1, 3, by=0.001), 1))
         possibleError = tryCatch({
           #get tps
-          link = read_html(paste0('https://pemilu2019.kpu.go.id/static/json/wilayah/', wilayah_names$id[i], '/', kabupaten_names$id[j],'/', kecamatan_names$id[k],'/', kelurahan_names$id[l],'.json'))
+          link = content(GET(URLencode(paste0('https://pemilu2019.kpu.go.id/static/json/wilayah/', wilayah_names$id[i], '/', kabupaten_names$id[j],'/', kecamatan_names$id[k],'/', kelurahan_names$id[l],'.json'))), as="text")
           smmry_tps = link %>% 
-            html_text() %>% 
             jsonlite::fromJSON(.)
           tps_names = data.frame(name = sapply(smmry_tps, function(x) x$nama), id = names(smmry_tps))
         }, error = function(e) e)
@@ -101,12 +96,15 @@ for(i in i_prog:nrow(wilayah_names)){
           Sys.sleep(sample(seq(1, 3, by=0.001), 1))
           possibleError = tryCatch({
             #get_result
-            link = read_html(paste0('https://pemilu2019.kpu.go.id/static/json/hhcw/ppwp/', wilayah_names$id[i], '/', kabupaten_names$id[j],'/', kecamatan_names$id[k],'/', kelurahan_names$id[l],'/', tps_names$id[m], '.json'))
+            link = content(GET(URLencode(paste0('https://pemilu2019.kpu.go.id/static/json/hhcw/ppwp/', wilayah_names$id[i], '/', kabupaten_names$id[j],'/', kecamatan_names$id[k],'/', kelurahan_names$id[l],'/', tps_names$id[m], '.json'))), as="text")
             result = link %>% 
-              html_text() %>% 
               jsonlite::fromJSON(.)
-            result$images = paste0('https://pemilu2019.kpu.go.id/img/c/',substr(tps_names$id[m],1,3),'/', substr(tps_names$id[m],4,6), '/', tps_names$id[m], '/', result$images, collapse = ', ')
-            result = data.frame(result)
+            if(length(result)==0){
+              result = data.frame(matrix(NA, ncol = 9, nrow = 1))
+            }else{
+              result$images = paste0('https://pemilu2019.kpu.go.id/img/c/',substr(tps_names$id[m],1,3),'/', substr(tps_names$id[m],4,6), '/', tps_names$id[m], '/', result$images, collapse = ', ')
+              result = data.frame(result)
+            }
             names(result) = c('timestamp', 'paslon_01', 'paslon_02', 'c1_url', 'pemilih_terdaftar', 'jumlah_suara_sah', 'pengguna_hak_pilih', 'jumlah_suara', 'jumlah_suara_tdk_sah')
             result$tps = tps_names$name[m]
             result$kelurahan = kelurahan_names$name[l]
@@ -114,7 +112,7 @@ for(i in i_prog:nrow(wilayah_names)){
             result$kabupaten = kabupaten_names$name[j]
             result$wilayah = wilayah_names$name[i]
             write.table(result, "pilpres_kpu_result.csv", append = T, sep = "|", col.names = !file.exists("pilpres_kpu_result.csv"), row.names = F)
-            print(paste(i, "crawled provinsi", wilayah_names$namaPropinsi[i], "kota", smmry_kecamatan$namaKabKota[i], "kecamatan", smmry_kecamatan$namaKecamatan[i], "kelurahan", smmry_kecamatan$namaKelurahan[i]))
+            print(paste("crawled provinsi", wilayah_names$name[i], wilayah_names$id[i], "kota", kabupaten_names$name[j], kabupaten_names$id[j], "kecamatan", kecamatan_names$name[k], kecamatan_names$id[k], "kelurahan", kelurahan_names$name[l], kelurahan_names$id[l], 'tps', tps_names$name[m], tps_names$id[m]))
           }, error = function(e) e)
           
           if(inherits(possibleError, "error")){
