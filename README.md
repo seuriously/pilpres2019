@@ -15,5 +15,9 @@ crawl these columns from kpu (https://pemilu2019.kpu.go.id/#/ppwp/hitung-suara/)
 * kecamatan
 * kabupaten
 * wilayah
+* b+c+i	: jumlah suara yang terpakai
+* o = h	: melakukan pengecekan apakah jumlah suara yg terpakai == jumlah_suara. Nilai 1 jika tidak sama
+* b+c	: jumlah suara sah
+* q = f : checker apakah jumlah suara sah == jumlah_suara_sah. Nilai 1 jika tidak sama
 
 ![example data](https://i.imgur.com/qCH7keR.png)
